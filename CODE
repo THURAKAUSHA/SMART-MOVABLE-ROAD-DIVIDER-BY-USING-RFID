@@ -1,0 +1,136 @@
+#include<LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27,16,2);
+char tag[] = "550020CF8B31"; // Replace with your own Tag ID
+char input[12];        // A variable to store the Tag ID being presented
+int count = 0;        // A counter variable to navigate through the input[] character array
+boolean flag = 0;     // A variable to store the Tag match status
+boolean flag1 = 0;     // A variable to store the Tag match status
+#define Motor_pin1 5
+#define Motor_pin2 6
+#define Motor_pin3 7
+#define Motor_pin4 8
+int G=0;
+void setup()
+{
+  Serial.begin(9600);  
+ // Initialise Serial Communication with the Serial Monitor
+  pinMode(Motor_pin1,OUTPUT);
+  pinMode(Motor_pin2,OUTPUT);
+  digitalWrite(Motor_pin1,LOW);
+  digitalWrite(Motor_pin2,LOW);
+  digitalWrite(Motor_pin3,LOW);
+  digitalWrite(Motor_pin4,LOW);
+  lcd.init();
+  lcd.begin(16,2);
+  lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("SMART MOVABLE");
+  lcd.setCursor(0,1);
+  lcd.print("ROAD DIVIDER");
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(" BY USING ");
+  lcd.setCursor(0,1);
+  lcd.print("  RFID  ");
+  delay(2000);
+}
+void loop()
+{
+   lcd.clear();
+   lcd.setCursor(0,0);
+   lcd.print("SCAN CARD");
+   delay(200);
+  if(Serial.available())// Check if there is incoming data in the RFID Reader Serial Buffer.
+  {
+    count = 0; // Reset the counter to zero
+    /* Keep reading Byte by Byte from the Buffer till the RFID Reader Buffer is empty 
+       or till 12 Bytes (the ID size of our Tag) is read */
+    while(Serial.available() && count < 12) 
+    {
+      input[count] = Serial.read(); // Read 1 Byte of data and store it in the input[] variable
+      count++; // increment counter
+      
+      delay(5);
+    }
+    Serial.print(input);
+    /* When the counter reaches 12 (the size of the ID) we stop and compare each value 
+        of the input[] to the corresponding stored value */
+    if(count == 12) // 
+    {
+      count =0; // reset counter varibale to 0
+      flag = 1;
+      flag1 = 1;
+      /* Iterate through each value and compare till either the 12 values are 
+         all matching or till the first mistmatch occurs */
+      while(count<12 && flag !=0)  
+      {
+        if(input[count]==tag[count])
+        {
+        flag = 1; // everytime the values match, we set the flag variable to 1 
+        }
+//        else if(input[count]==tag1[count])
+//        {
+//        flag1 = 1; // everytime the values match, we set the flag variable to 1
+//        }
+        else
+        {
+        flag= 0;
+        flag1 = 0;/* if the ID values don't match, set flag variable to 0 and 
+         }                     stop comparing by exiting the while loop */
+        }
+        count++; // increment i
+      }
+    }
+    if(flag == 1) // If flag variable is 1, then it means the tags match
+    {
+      Serial.println("Access Allowed!");
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Access Allowed!");
+      lcd.setCursor(0,1);
+      lcd.print("DIVIDER OPENED");
+      digitalWrite(Motor_pin1,HIGH);
+      digitalWrite(Motor_pin2,LOW);
+      digitalWrite(Motor_pin3,HIGH);
+      digitalWrite(Motor_pin4,LOW);
+      delay(2000);
+      digitalWrite(Motor_pin1,LOW);
+      digitalWrite(Motor_pin2,LOW);
+      digitalWrite(Motor_pin3,LOW);
+      digitalWrite(Motor_pin4,LOW);
+      delay(5000);
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("DIVIDER CLOSED");
+      digitalWrite(Motor_pin1,LOW);
+      digitalWrite(Motor_pin2,HIGH);
+      digitalWrite(Motor_pin3,LOW);
+      digitalWrite(Motor_pin4,HIGH);
+      delay(2000);
+      digitalWrite(Motor_pin1,LOW);
+      digitalWrite(Motor_pin2,LOW);
+      digitalWrite(Motor_pin3,LOW);
+      digitalWrite(Motor_pin4,LOW);
+    }
+    else
+    {
+      Serial.println("Access Denied"); // Incorrect Tag Message
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Access Denied");
+      digitalWrite(Motor_pin1,LOW);
+      digitalWrite(Motor_pin2,LOW);
+      delay(1000);
+    }
+    /* Fill the input variable array with a fixed value 'F' to overwrite 
+    all values getting it empty for the next read cycle */
+
+    for(count=0; count<12; count++) 
+    {
+      input[count]= 'F';
+    }
+    count = 0; // Reset counter variable
+  }
+}
